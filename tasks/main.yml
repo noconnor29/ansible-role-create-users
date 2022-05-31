@@ -1,0 +1,53 @@
+---
+- name: Include OS-specific Variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+- name: Create users and groups
+  block:
+    - name: Create ansible group
+      ansible.builtin.group:
+        name: ansible
+        state: present
+
+    - name: Create users
+      ansible.builtin.user:
+        name: "{{ user.name }}"
+        shell: "{{ user.shell }}"
+        groups: "{{ user.groups }}"
+      loop:
+        - name: ansible
+          shell: /bin/bash
+          groups:  ansible,adm,{{ os_sudo }}
+        - name: adminnick
+          shell: /bin/bash
+          groups: adm,{{ os_sudo }}
+        - name: nessus_scanner
+          shell: /bin/bash
+          groups: adm
+      loop_control:
+        loop_var: user
+
+    - name: Add ansible user to the sudoers
+      copy:
+        dest: "/etc/sudoers.d/ansible"
+        content: "ansible  ALL=(ALL)  NOPASSWD: ALL"
+
+    - name: Pull ssh pubkeys from Github
+      authorized_key:
+        user: "{{ pubkeys }}"
+        state: present
+        key: https://github.com/noconnor29.keys
+        validate_certs: True
+      loop:
+        - ansible
+        - adminnick
+        - nessus_scanner
+      loop_control:
+        loop_var: pubkeys
+
+    - name: Add PATH to cron for user
+      ansible.builtin.cron:
+        env: yes
+        user: ansible
+        name: PATH
+        job: /home/ansible/.local/bin:/bin:/usr/bin
