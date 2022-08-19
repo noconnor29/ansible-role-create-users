@@ -18,7 +18,7 @@
         - name: ansible
           shell: /bin/bash
           groups:  ansible,adm,{{ os_sudo }}
-        - name: adminnick
+        - name: nick
           shell: /bin/bash
           groups: adm,{{ os_sudo }}
         - name: nessus_scanner
@@ -40,7 +40,7 @@
         validate_certs: True
       loop:
         - ansible
-        - adminnick
+        - nick
         - nessus_scanner
       loop_control:
         loop_var: pubkeys
